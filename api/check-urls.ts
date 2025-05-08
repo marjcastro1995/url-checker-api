@@ -1,6 +1,6 @@
 // // File: api/check-urls.ts
 // import type { VercelRequest, VercelResponse } from '@vercel/node';
-// import fetch from 'node-fetch'; // Add to your package.json if using TypeScript locally
+// import fetch from 'node-fetch';
 
 // type CheckResult = {
 //   url: string;
@@ -40,18 +40,31 @@
 //     })
 //   );
 
-//   res.status(200).json({ results });
+//   // Only return broken URLs
+//   const broken = results.filter(result => !result.ok);
+
+//   res.status(200).json({ broken });
 // }
 
 // File: api/check-urls.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import fetch from 'node-fetch';
 
+type Entry = {
+  url: string;
+  placementId: string | number;
+  publisherId: string | number;
+  type: string;
+};
+
 type CheckResult = {
   url: string;
   status: number | null;
   ok: boolean;
   error?: string;
+  placementId: string | number;
+  publisherId: string | number;
+  type: string;
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -59,20 +72,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ message: 'Method not allowed. Use POST.' });
   }
 
-  const urls: string[] = req.body?.urls;
+  const entries: Entry[] = req.body?.entries;
 
-  if (!Array.isArray(urls)) {
-    return res.status(400).json({ message: 'Invalid request body. Expected an array of URLs.' });
+  if (!Array.isArray(entries)) {
+    return res.status(400).json({ message: 'Invalid request body. Expected an array of entry objects.' });
   }
 
   const results: CheckResult[] = await Promise.all(
-    urls.map(async (url) => {
+    entries.map(async ({ url, placementId, publisherId, type }) => {
       try {
         const response = await fetch(url, { method: 'HEAD', timeout: 5000 });
         return {
           url,
           status: response.status,
           ok: response.ok,
+          placementId,
+          publisherId,
+          type
         };
       } catch (error: any) {
         return {
@@ -80,13 +96,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           status: null,
           ok: false,
           error: error.message,
+          placementId,
+          publisherId,
+          type
         };
       }
     })
   );
 
-  // Only return broken URLs
-  const broken = results.filter(result => !result.ok);
-
+  const broken = results.filter(r => !r.ok);
   res.status(200).json({ broken });
 }

@@ -81,7 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const results: CheckResult[] = await Promise.all(
     entries.map(async ({ url, placementId, publisherId, type }) => {
       try {
-        const response = await fetch(url, { method: 'HEAD', timeout: 5000 });
+        // const response = await fetch(url, { method: 'HEAD', timeout: 5000 });
+        const response = await fetch(url, { method: 'GET', timeout: 5000 });
         return {
           url,
           status: response.status,

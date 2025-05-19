@@ -73,14 +73,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
           },
-          // Note: node-fetch v2 does NOT support timeout in options. Use AbortController for timeout.
         };
 
-        // Implement timeout with AbortController
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(url, { ...options, signal: controller.signal });
-        clearTimeout(timeout);
+        const response = await fetch(url, options);
 
         const contentType = response.headers.get('content-type');
 
@@ -99,24 +94,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ok: response.ok,
         };
       } catch (error: any) {
-        // Catch fetch abort and other errors
-        const message =
-          error.name === 'AbortError'
-            ? 'Request timed out after 5 seconds'
-            : error.message || 'Unexpected error occurred';
-
         return {
           url,
           status: null,
           ok: false,
-          error: message,
+          error: error.message || 'Unexpected error occurred',
         };
       }
     })
   );
 
-  // Filter only broken URLs (ok: false)
   const broken = results.filter((r) => !r.ok);
-
   res.status(200).json({ broken });
 }
+

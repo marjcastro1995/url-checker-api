@@ -68,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     urls.map(async (url) => {
       try {
         const options: RequestInit = {
-          method: 'GET',
+          method: 'HEAD',
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -76,18 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
 
         const response = await fetch(url, options);
-
-        const contentType = response.headers.get('content-type');
-
-        if (response.status === 403 && contentType?.includes('text/html')) {
-          return {
-            url,
-            status: response.status,
-            ok: false,
-            error: '403 Forbidden – likely CDN or bot-blocking',
-          };
-        }
-
         return {
           url,
           status: response.status,
@@ -107,4 +95,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const broken = results.filter((r) => !r.ok);
   res.status(200).json({ broken });
 }
+
 
